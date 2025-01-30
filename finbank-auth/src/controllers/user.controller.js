@@ -1,8 +1,5 @@
 const jwt = require('jsonwebtoken')
 const bcrypt = require('bcryptjs')
-const dotenv = require('dotenv')
-
-dotenv.config()
 
 const AWS = require('../config/keys')
 const dynamoDB = new AWS.DynamoDB.DocumentClient()
