@@ -1,0 +1,6 @@
+id,nombre,monto,is_active
+1,Rocio,1500.5,True
+2,Carlos,2500.75,False
+3,Luis,1000.0,True
+4,Ana,3000.2,True
+5,Jorge,500.3,False
