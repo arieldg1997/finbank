@@ -1,5 +1,5 @@
 const express = require('express')
-const classifierRouter = require('./routes/classifier.router')
+const metadataRouter = require('./routes/metadata.router')
 const cors = require('cors')
 
 const app = express()
@@ -15,6 +15,6 @@ app.use(
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
-app.use('/classifier', classifierRouter)
+app.use('/metadata', metadataRouter)
 
 module.exports = app

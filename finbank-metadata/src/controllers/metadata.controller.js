@@ -1,73 +1,114 @@
 const AWS = require('../config/keys')
-const dynamoDB = new AWS.DynamoDB.DocumentClient()
-const glueService = require('../services/glue.service')
 
-const TABLE_NAME = 'finbank-classifiers'
+const glue = new AWS.Glue()
+const lakeFormation = new AWS.LakeFormation()
 
-const getAllClassifiers = async (req, res) => {
-  const params = {
-    TableName: TABLE_NAME
-  }
+const listGlueTables = async (req, res) => {
+  const databaseName = req.params.databaseName
 
   try {
-    const data = await dynamoDB.scan(params).promise()
-    res.json(data.Items)
-  } catch (error) {
-    console.error('Error al listar classifiers:', error)
-    throw new Error('No se pudieron obtener los classifiers.')
-  }
-}
+    const params = { DatabaseName: databaseName }
+    const response = await glue.getTables(params).promise()
 
-const createClassifier = async (req, res) => {
-  const { domain, interface, writeMode, user, columns } = req.body
+    const tableNames = response.TableList.map(table => table.Name)
 
-  const classifierName = `${domain}-${interface}`
-
-  const duplicatedClassifier = await dynamoDB
-    .query({
-      TableName: TABLE_NAME,
-      KeyConditionExpression: '#interface = :nameValue',
-      ExpressionAttributeNames: {
-        '#interface': 'interface'
-      },
-      ExpressionAttributeValues: {
-        ':nameValue': interface
-      }
+    return res.status(200).json({
+      database: databaseName,
+      tables: tableNames
     })
-    .promise()
-
-  if (duplicatedClassifier['Count'] > 0) {
-    res.status(500).json({ message: 'Classifier already exists' })
-    return
-  }
-
-  try {
-    glueService.createTableIfNotExists(domain, interface, columns)
-
-    const newClassifier = {
-      name: classifierName,
-      domain: domain,
-      interface: interface,
-      writeMode: writeMode,
-      columns: columns,
-      createdAt: new Date().toISOString(),
-      createdBy: user,
-      updatedAt: new Date().toISOString(),
-      updatedBy: user
-    }
-
-    const params = {
-      TableName: TABLE_NAME,
-      Item: newClassifier
-    }
-
-    await dynamoDB.put(params).promise()
-
-    res.status(201).json({ message: 'Classifier registered successfully' })
   } catch (error) {
-    console.error('Error registering classifier:', error)
-    res.status(500).json({ message: 'Error registering classifier' })
+    console.error('Error al listar tablas de Glue:', error)
+
+    return res.status(500).json({
+      error: 'Error al listar tablas',
+      details: error.message
+    })
   }
 }
 
-module.exports = { getAllClassifiers, createClassifier }
+const updateGlueTableMetadata = async (databaseName, tableName, newParams) => {
+  try {
+    const response = await glue
+      .getTable({ DatabaseName: databaseName, Name: tableName })
+      .promise()
+
+    if (!response || !response.Table) {
+      throw new Error(
+        `La tabla '${tableName}' no fue encontrada en la base de datos '${databaseName}'`
+      )
+    }
+
+    const { Table } = response
+
+    const updatedTableInput = {
+      Name: Table.Name,
+      StorageDescriptor: Table.StorageDescriptor,
+      TableType: Table.TableType,
+      Parameters: {
+        ...Table.Parameters,
+        ...newParams
+      }
+    }
+
+    await glue
+      .updateTable({
+        DatabaseName: databaseName,
+        TableInput: updatedTableInput
+      })
+      .promise()
+
+    console.log(`Metadata actualizada en la tabla ${tableName}`)
+  } catch (error) {
+    console.error('Error actualizando metadata en Glue:', error)
+  }
+}
+
+const applyLFTagToTable = async (
+  databaseName,
+  tableName,
+  shareTo,
+  classification
+) => {
+  try {
+    const params = {
+      Resource: {
+        Table: {
+          DatabaseName: databaseName,
+          Name: tableName
+        }
+      },
+      LFTags: [
+        {
+          TagKey: 'Classification',
+          TagValues: classification
+        }
+      ]
+    }
+
+    if (shareTo) {
+      params.LFTags.push({
+        TagKey: shareTo[0],
+        TagValues: shareTo
+      })
+    }
+
+    console.log(params.LFTags)
+
+    const response = await lakeFormation.addLFTagsToResource(params).promise()
+    console.log(JSON.stringify(response))
+
+    console.log(`LF-Tags aplicados a la tabla ${databaseName}.${tableName}`)
+  } catch (error) {
+    console.error('Error aplicando LF-Tag a la tabla:', error)
+  }
+}
+
+const putMetadata = async (req, res) => {
+  const { schema, table, shareTo, classification, metadata } = req.body
+
+  updateGlueTableMetadata(schema, table, metadata)
+  applyLFTagToTable(schema, table, shareTo, classification)
+  res.status(201).json({ message: 'Metadata actualizada' })
+}
+
+module.exports = { putMetadata, listGlueTables }
