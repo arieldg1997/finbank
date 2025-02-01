@@ -1,5 +1,3 @@
-'use client'
-
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { FaCog, FaSearch } from 'react-icons/fa'
@@ -27,8 +25,8 @@ export default function SidebarLayout ({ children }) {
         <nav>
           <ul className='space-y-4'>
             <li>
-              <a
-                href='/home'
+              <Link
+                to='/home'
                 className={`block py-2 px-4 text-lg rounded-lg flex items-center gap-3 transition-all ${
                   location.pathname === '/home'
                     ? 'bg-gray-700 text-white'
@@ -36,11 +34,11 @@ export default function SidebarLayout ({ children }) {
                 }`}
               >
                 <FaCog className='text-xl' /> Classifiers
-              </a>
+              </Link>
             </li>
             <li>
-              <a
-                href='/metadata'
+              <Link
+                to='/metadata'
                 className={`block py-2 px-4 text-lg rounded-lg flex items-center gap-3 transition-all ${
                   location.pathname === '/metadata'
                     ? 'bg-gray-700 text-white'
@@ -48,7 +46,7 @@ export default function SidebarLayout ({ children }) {
                 }`}
               >
                 <FaSearch className='text-xl' /> Metadata
-              </a>
+              </Link>
             </li>
           </ul>
         </nav>

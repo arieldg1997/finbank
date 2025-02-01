@@ -1,5 +1,3 @@
-'use client'
-
 export default function MetadataPage () {
   return (
     <div className='p-8'>

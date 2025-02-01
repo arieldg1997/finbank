@@ -1,41 +1,12 @@
-'use client'
-
-import React, { createContext, useState, useContext, useEffect } from 'react'
-import { useNavigate } from "react-router-dom"
-import SidebarLayout from '../components/sidebar'
+// src/context/AuthContext.jsx
+import React, { createContext, useState, useContext } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      setLoading(true)
-
-      const token = localStorage.getItem('token')
-      const currentPath = window.location.pathname
-
-      if (token) {
-        setUser({ username: localStorage.getItem('username') })
-
-        if (currentPath === '/classifier') {
-          // navigate("/dashboard")('/home')
-        } else if (currentPath !== '/metadata' && currentPath !== '/home') {
-          // navigate("/dashboard")('/home')
-        }
-      } else {
-        if (currentPath !== '/login') {
-          // navigate("/dashboard")('/login')
-        }
-      }
-      setLoading(false)
-    }
-
-    checkAuth()
-  }, [router])
 
   const login = async (username, password) => {
     try {
@@ -55,7 +26,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('token', data.token)
       localStorage.setItem('username', username)
       setUser({ username })
-      navigate("/dashboard")('/home')
     } catch (error) {
       console.error('Error de login:', error)
       throw error
@@ -66,28 +36,16 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token')
     localStorage.removeItem('username')
     setUser(null)
-    navigate("/dashboard")('/login')
-  }
-
-  if (loading) {
-    return (
-      <div className='min-h-screen flex items-center justify-center bg-gray-100 text-gray-700'>
-        Verificando sesión...
-      </div>
-    )
+    navigate('/login')
   }
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
-      {user ? <SidebarLayout>{children}</SidebarLayout> : children}
+      {children}
     </AuthContext.Provider>
   )
 }
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
+  return useContext(AuthContext)
 }

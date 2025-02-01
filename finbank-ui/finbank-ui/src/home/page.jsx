@@ -1,7 +1,5 @@
-'use client'
-
 import { useAuth } from '../context/AuthContext'
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import ClassifiersTable from '../components/classifiers'
 
@@ -13,7 +11,7 @@ export default function Home () {
     if (user === null) {
       navigate('/login')
     }
-  }, [user, router])
+  }, [user])
 
   if (!user) {
     return (

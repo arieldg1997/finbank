@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useEffect } from 'react'
 
 // Simulación de una llamada a la API

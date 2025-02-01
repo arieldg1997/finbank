@@ -1,22 +1,21 @@
+// src/App.jsx
+import React from 'react'
+import { Routes, Route } from 'react-router-dom'
+import Home from './pages/Home'
+import Login from './pages/Login'
+import NotFound from './pages/NotFound'
 import './App.css'
-import { AuthProvider } from './context/AuthContext'
 
-const inter = Inter({ subsets: ['latin'] })
-
-const metadata = {
-  title: 'Finbank',
-  description: 'Finbank webapp'
-}
-
-export default function App ({ children }) {
+function App () {
   return (
-    <html lang='es'>
-      <body>
-        dsdjsahdisahidhsaiuhd
-        <AuthProvider>{children}</AuthProvider>
-      </body>
-    </html>
+    <div className='app'>
+      <Routes>
+        <Route path='/' element={<Home />} />
+        <Route path='/login' element={<Login />} />
+        <Route path='*' element={<NotFound />} />
+      </Routes>
+    </div>
   )
 }
 
-export { App, metadata }
+export default App
