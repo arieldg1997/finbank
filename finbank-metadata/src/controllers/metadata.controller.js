@@ -2,6 +2,8 @@ const AWS = require('../config/keys')
 
 const glue = new AWS.Glue()
 const lakeFormation = new AWS.LakeFormation()
+const dynamoDB = new AWS.DynamoDB.DocumentClient()
+const TABLE_NAME = 'finbank-classifiers'
 
 const listGlueTables = async (req, res) => {
   const databaseName = req.params.databaseName
@@ -80,19 +82,18 @@ const applyLFTagToTable = async (
       LFTags: [
         {
           TagKey: 'Classification',
-          TagValues: classification
+          TagValues: [classification]
         }
       ]
     }
 
-    if (shareTo) {
+    for (const tag of shareTo) {
       params.LFTags.push({
-        TagKey: shareTo[0],
-        TagValues: shareTo
+        TagKey: tag,
+        TagValues: [tag]
       })
     }
 
-    console.log(params.LFTags)
 
     const response = await lakeFormation.addLFTagsToResource(params).promise()
     console.log(JSON.stringify(response))
@@ -106,9 +107,35 @@ const applyLFTagToTable = async (
 const putMetadata = async (req, res) => {
   const { schema, table, shareTo, classification, metadata } = req.body
 
+  const params = {
+    TableName: TABLE_NAME,
+    Key: { interface: table }
+  }
+
+  const data = await dynamoDB.get(params).promise()
+
+  if (!data.Item) {
+    return res.status(404).json({ error: 'Metadata not found' })
+  }
+  const updateParams = {
+    TableName: TABLE_NAME,
+    Key: { interface: table },
+    UpdateExpression:
+      'SET shareTo = :shareTo, classification = :classification, metadata = :metadata',
+    ExpressionAttributeValues: {
+      ':shareTo': shareTo,
+      ':classification': classification,
+      ':metadata': metadata
+    },
+    ReturnValues: 'ALL_NEW'
+  }
+
+  const updateResult = await dynamoDB.update(updateParams).promise()
+
   updateGlueTableMetadata(schema, table, metadata)
   applyLFTagToTable(schema, table, shareTo, classification)
-  res.status(201).json({ message: 'Metadata actualizada' })
+
+  return res.json(updateResult.Attributes)
 }
 
 module.exports = { putMetadata, listGlueTables }

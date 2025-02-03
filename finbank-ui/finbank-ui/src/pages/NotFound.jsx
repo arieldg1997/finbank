@@ -1,10 +1,12 @@
 import React from 'react'
+import { Typography } from '@mui/material'
 
-function NotFound () {
+const NotFound = () => {
   return (
     <div>
-      <h1>404</h1>
-      <p>La página que buscas no existe.</p>
+      <Typography variant='h4' gutterBottom>
+        404 - Página no encontrada
+      </Typography>
     </div>
   )
 }

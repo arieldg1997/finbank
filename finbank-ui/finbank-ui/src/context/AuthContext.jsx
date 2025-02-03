@@ -1,12 +1,21 @@
-// src/context/AuthContext.jsx
-import React, { createContext, useState, useContext } from 'react'
+import React, { createContext, useState, useContext, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const token = localStorage.getItem('token')
+    const username = localStorage.getItem('username')
+    if (token && username) {
+      setUser({ username })
+    }
+    setLoading(false)
+  }, [])
 
   const login = async (username, password) => {
     try {
@@ -39,6 +48,21 @@ export const AuthProvider = ({ children }) => {
     navigate('/login')
   }
 
+  if (loading) {
+    return (
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh'
+        }}
+      >
+        Cargando...
+      </div>
+    )
+  }
+
   return (
     <AuthContext.Provider value={{ user, login, logout }}>
       {children}
@@ -47,5 +71,9 @@ export const AuthProvider = ({ children }) => {
 }
 
 export const useAuth = () => {
-  return useContext(AuthContext)
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider')
+  }
+  return context
 }
